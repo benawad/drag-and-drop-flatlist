@@ -1,4 +1,4 @@
-import React from "react";
+import React, { createRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,7 +6,9 @@ import {
   FlatList,
   PanResponder,
   PanResponderInstance,
-  Animated
+  Animated,
+  SafeAreaView,
+  Button
 } from "react-native";
 
 function getRandomColor() {
@@ -59,6 +61,8 @@ export default class App extends React.Component {
   rowHeight = 0;
   currentIdx = -1;
   active = false;
+  flatList = createRef<FlatList<any>>();
+  flatListHeight = 0;
 
   constructor(props) {
     super(props);
@@ -116,6 +120,19 @@ export default class App extends React.Component {
     }
 
     requestAnimationFrame(() => {
+      // check if we are near the bottom or top
+      if (this.currentY + 100 > this.flatListHeight) {
+        this.flatList.current.scrollToOffset({
+          offset: this.scrollOffset + 20,
+          animated: false
+        });
+      } else if (this.currentY < 100) {
+        this.flatList.current.scrollToOffset({
+          offset: this.scrollOffset - 20,
+          animated: false
+        });
+      }
+
       // check y value see if we need to reorder
       const newIdx = this.yToIndex(this.currentY);
       if (this.currentIdx !== newIdx) {
@@ -176,7 +193,7 @@ export default class App extends React.Component {
     );
 
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {dragging && (
           <Animated.View
             style={{
@@ -191,6 +208,7 @@ export default class App extends React.Component {
           </Animated.View>
         )}
         <FlatList
+          ref={this.flatList}
           scrollEnabled={!dragging}
           style={{ width: "100%" }}
           data={data}
@@ -200,11 +218,12 @@ export default class App extends React.Component {
           }}
           onLayout={e => {
             this.flatlistTopOffset = e.nativeEvent.layout.y;
+            this.flatListHeight = e.nativeEvent.layout.height;
           }}
           scrollEventThrottle={16}
           keyExtractor={item => "" + item}
         />
-      </View>
+      </SafeAreaView>
     );
   }
 }
